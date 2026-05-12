@@ -18,6 +18,7 @@ public class OrderListener {
         System.out.println("Order baru diterima");
         System.out.println("ID = " + order.getId());
         System.out.println("Email: " + order.getEmail());
+        System.out.println("Username: "+ order.getUsername());
         notificationService.sendEmail(order);
     }
 }

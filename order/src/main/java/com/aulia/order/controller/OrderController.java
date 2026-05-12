@@ -19,7 +19,7 @@ import com.aulia.order.service.OrderService;
 import com.aulia.order.vo.ResponseTemplate;
 
 @RestController
-@RequestMapping("/api/order")
+@RequestMapping("/api/orders")
 public class OrderController {
     @Autowired
     private OrderService orderService;
@@ -53,11 +53,9 @@ public class OrderController {
             }
 
 
-
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteOrder (@PathVariable Long id){
         orderService.deleteOrder(id);
         return ResponseEntity.ok().build();
     }
-
 }
