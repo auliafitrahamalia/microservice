@@ -11,3 +11,15 @@ logging:
     level:
         com.netflix.eureka: OFF
         com.netflix.dicovery: OFF
+management:
+    endpoints:
+        web:
+            exposure:
+                include: health,info,prometheus
+    endpoint:
+        prometheus:
+            enabled: true
+    prometheus:
+        metrics:
+            export:
+                enabled: true

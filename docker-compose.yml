@@ -1,0 +1,192 @@
+services:
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - monitoring-net
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - monitoring-net
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    hostname: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    restart: unless-stopped
+    networks:
+      - monitoring-net
+
+  eureka:
+    build:
+      context: ./eureka
+    container_name: eureka-container
+    ports:
+      - "8761:8761"
+    restart: unless-stopped
+    networks:
+      - monitoring-net
+
+  gateway:
+    build:
+      context: ./gateway-service
+    container_name: gateway-container
+    ports:
+      - "9000:9000"
+    depends_on:
+      - eureka
+    restart: unless-stopped
+    networks:
+      - monitoring-net
+
+  authentication:
+    build:
+      context: ./authentication-service
+    container_name: authentication-container
+    ports:
+      - "8091:8091"
+    depends_on:
+      - eureka
+    restart: unless-stopped
+    networks:
+      - monitoring-net
+
+  produk:
+    build:
+      context: ./produk
+    container_name: produk-container
+    ports:
+      - "8081:8081"
+    depends_on:
+      - rabbitmq
+      - eureka
+    restart: unless-stopped
+    networks:
+      - monitoring-net
+
+  pelanggan:
+    build:
+      context: ./pelanggan
+    container_name: pelanggan-container
+    ports:
+      - "8082:8082"
+    depends_on:
+      - eureka
+    restart: unless-stopped
+    networks:
+      - monitoring-net
+
+  order:
+    build:
+      context: ./order
+    container_name: order-container
+    ports:
+      - "8083:8083"
+    depends_on:
+      - rabbitmq
+      - eureka
+    restart: unless-stopped
+    networks:
+      - monitoring-net
+
+  produser:
+    build:
+      context: ./produser
+    container_name: produser-container
+    ports:
+      - "8080:8080"
+    depends_on:
+      - rabbitmq
+      - eureka
+    restart: unless-stopped
+    networks:
+      - monitoring-net
+
+  consumer:
+    build:
+      context: ./consumer
+    container_name: consumer-container
+    ports:
+      - "8084:8084"
+    depends_on:
+      - rabbitmq
+      - eureka
+    restart: unless-stopped
+    networks:
+      - monitoring-net
+
+  notification:
+    build:
+      context: ./notification
+    container_name: notification-container
+    depends_on:
+      - rabbitmq
+    restart: unless-stopped
+    networks:
+      - monitoring-net
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    networks:
+      - monitoring-net
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.14.3
+    container_name: logstash
+    volumes:
+      - ./logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    ports:
+      - "5000:5000"
+    depends_on:
+      - elasticsearch
+    networks:
+      - monitoring-net
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.14.3
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - monitoring-net
+
+volumes:
+  es-data:
+
+networks:
+  monitoring-net:
+    driver: bridge

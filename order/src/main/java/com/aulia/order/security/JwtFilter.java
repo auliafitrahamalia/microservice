@@ -13,17 +13,23 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 @Component
-public class JwtFilter extends OncePerRequestFilter{
+public class JwtFilter extends OncePerRequestFilter {
     private final String SECRET_KEY = "mysupersecretkeymysupersecretkeymysupersecretkey";
 
     @Override
     protected void doFilterInternal(
-        HttpServletRequest request,
-        HttpServletResponse response,
-        FilterChain filterChain)
-        throws ServletException, IOException{
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain)
+            throws ServletException, IOException {
 
-    String header = request.getHeader("Authorization");
+        String path = request.getServletPath();
+        if (path.startsWith("/actuator")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String header = request.getHeader("Authorization");
 
         if (header == null || !header.startsWith("Bearer ")) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -35,9 +41,9 @@ public class JwtFilter extends OncePerRequestFilter{
 
         try {
             Jwts.parserBuilder()
-    .setSigningKey(SECRET_KEY.getBytes())
-    .build()
-    .parseClaimsJws(token);
+                    .setSigningKey(SECRET_KEY.getBytes())
+                    .build()
+                    .parseClaimsJws(token);
 
         } catch (JwtException e) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -47,6 +53,6 @@ public class JwtFilter extends OncePerRequestFilter{
 
         // lanjut ke request berikutnya
         filterChain.doFilter(request, response);
-            
-        }
+
+    }
 }
